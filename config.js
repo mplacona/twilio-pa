@@ -4,7 +4,7 @@ var cfg = {};
 cfg.port = process.env.PORT || 2002;
 
 // My own telephone number for notifications
-cfg.ownNumber = '+447590566866'
+cfg.ownNumber = process.env.TELEPHONE_NUMBER;
 
 // Your Twilio account SID and auth token, both found at:
 // https://www.twilio.com/user/account
@@ -22,9 +22,9 @@ cfg.twilioConfig = {
 
 // Google OAuth Configuration
 cfg.googleConfig = {
-	clientID: '818396815844-ug45hf9p004thp69ra4dkveo3fm39b1p.apps.googleusercontent.com',
-	clientSecret: 'v0CLCnyw5IA8EPsOPWoI1kL5',
-	calendarId: 'hn8me17ad3eg0e8a1qc6bq8s28@group.calendar.google.com',
+	clientID: process.env.GOOGLE_CLIENT_ID,
+	clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+	calendarId: process.env.GOOGLE_CALENDAR_ID,
 	redirectURL: 'http://localhost:2002/auth'
 };
 
