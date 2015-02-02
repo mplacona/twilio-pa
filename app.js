@@ -29,17 +29,15 @@ var calendarEvent = function(id, description, location, startTime) {
 
 app.post('/conference', function(req, res){
 
+  var number = req.query.number;
   var resp = new twilio.TwimlResponse();
   resp.say('Your conference call is starting.',
     {
         voice:'alice',
         language:'en-gb'
-    }).dial(function(node) {
-      node.conference('waitingRoom', {
-      beep:'true',
-      endConferenceOnExit: 'true'
+    }).dial(number,function(node) {
+        console.log(node);
     });
-  });
 
   res.writeHead(200, {
       'Content-Type':'text/xml'
@@ -89,8 +87,7 @@ app.get('/', function(req, res) {
             smsJob.send(jobSchedule.agenda, event, 'sms#2', config.ownNumber);
 
             // Call Job
-            callJob.call(jobSchedule.agenda, event, "call#1", event._number);
-            callJob.call(jobSchedule.agenda, event, "call#2", config.ownNumber);
+            callJob.call(jobSchedule.agenda, event, "call#1", config.ownNumber);
 
 
             // Start the tasks
@@ -106,7 +103,7 @@ app.get('/', function(req, res) {
 // Return point for oAuth flow
 app.get('/auth', function(req, res) {
 
-  var code = req.param('code');
+  var code = req.query.code;
 
   if (code) {
     // Get an access token based on our OAuth code
