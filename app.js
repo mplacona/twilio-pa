@@ -130,7 +130,7 @@ var server = app.listen(config.port, function() {
     done();
   });
 
-  jobSchedule.agenda.every('10 seconds', 'fetch events');
+  jobSchedule.agenda.every('30 minutes', 'fetch events');
 
   // Initialize the task scheduler
   jobSchedule.agenda.start()
