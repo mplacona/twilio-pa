@@ -6,19 +6,23 @@ var client = new twilio.RestClient(config.twilioConfig.accountSid, config.twilio
 
 exports.call = function(agenda, event, task, number) {
   agenda.define(task, function(job, done) {
-    //Place a phone call, and respond with TwiML instructions from the given URL
+    // Place a phone call, and respond with TwiML instructions from the given URL
     client.makeCall({
 
         to: number, // Any number Twilio can call
         from: config.twilioConfig.number, // A number you bought from Twilio and can use for outbound communication
-        url: 'http://4dc24449.ngrok.com/conference/?number='+event._number // A URL that produces an XML document (TwiML) which contains instructions for the call
+        url: 'http://4dc24449.ngrok.com/conference/?number='+event.number // A URL that produces an XML document (TwiML) which contains instructions for the call
 
     }, function(err, responseData) {
-        //executed when the call has been initiated.
-        console.log(responseData.from);
+        if(err){
+          console.log(err);
+      }else{
+          // executed when the call has been initiated.
+          console.log(responseData.from);
+      }
 
     });
     done();
   });
-  agenda.create(task).schedule(event._eventTime).unique({'id': event._id}).save();
+  agenda.create(task).schedule(event.eventTime).unique({'id': event.id}).save();
 }

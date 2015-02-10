@@ -6,4 +6,6 @@ agenda = new Agenda({
   }
 });
 
+agenda.start();
+
 exports.agenda = agenda;

@@ -1,10 +1,10 @@
-var cfg = {};
+var config = {};
 
 // HTTP Port to run our web application
-cfg.port = process.env.PORT || 2002;
+config.port = process.env.PORT || 2002;
 
 // My own telephone number for notifications
-cfg.ownNumber = process.env.TELEPHONE_NUMBER;
+config.ownNumber = process.env.TELEPHONE_NUMBER;
 
 // Your Twilio account SID and auth token, both found at:
 // https://www.twilio.com/user/account
@@ -12,7 +12,7 @@ cfg.ownNumber = process.env.TELEPHONE_NUMBER;
 // A good practice is to store these string values as system environment
 // variables, and load them from there as we are doing below. Alternately,
 // you could hard code these values here as strings.
-cfg.twilioConfig = {
+config.twilioConfig = {
 	accountSid: process.env.TWILIO_ACCOUNT_SID,
 	authToken: process.env.TWILIO_AUTH_TOKEN,
 	// A Twilio number you control - choose one from:
@@ -21,7 +21,7 @@ cfg.twilioConfig = {
 }
 
 // Google OAuth Configuration
-cfg.googleConfig = {
+config.googleConfig = {
 	clientID: process.env.GOOGLE_CLIENT_ID,
 	clientSecret: process.env.GOOGLE_CLIENT_SECRET,
 	calendarId: process.env.GOOGLE_CALENDAR_ID,
@@ -29,11 +29,11 @@ cfg.googleConfig = {
 };
 
 // MongoDB Settings
-cfg.mongoConfig = {
+config.mongoConfig = {
 	ip: '127.0.0.1',
 	port: 27017,
 	name: 'twilio-pa'
 }
 
 // Export configuration object
-module.exports = cfg;
+module.exports = config;

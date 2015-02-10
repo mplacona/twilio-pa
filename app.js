@@ -12,6 +12,8 @@ var app = express(),
     oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.googleConfig.clientSecret, config.googleConfig.redirectURL),
     authed = false;
 
+var MongoClient = require('mongodb').MongoClient;
+
 
 // Schedule setup
 var jobSchedule = require('./job-schedule.js'),
@@ -19,25 +21,23 @@ var jobSchedule = require('./job-schedule.js'),
     callJob = require('./jobs/start-call.js');
 
 // Event object
-var calendarEvent = function(id, description, location, startTime) {
-  this._id = id;
-  this._eventName = description;
-  this._number = location;
-  this._eventTime = Date.parse(startTime);
-  this._smsTime = Date.parse(startTime).addMinutes(-5)
+var CalendarEvent = function(id, description, location, startTime) {
+  this.id = id;
+  this.eventName = description;
+  this.number = location;
+  this.eventTime = Date.parse(startTime);
+  this.smsTime = Date.parse(startTime).addMinutes(-5);
 };
 
-app.post('/conference', function(req, res){
+app.post('/call', function(req, res){
 
   var number = req.query.number;
   var resp = new twilio.TwimlResponse();
-  resp.say('Your conference call is starting.',
+  resp.say('Your call is starting.',
     {
         voice:'alice',
         language:'en-gb'
-    }).dial(number,function(node) {
-        console.log(node);
-    });
+    }).dial(number);
 
   res.writeHead(200, {
       'Content-Type':'text/xml'
@@ -76,14 +76,14 @@ app.get('/', function(req, res) {
         console.log('Successfully fetched events');
 
         for (var i = 0; i < events.items.length; i++) {
-          // populate calendarEvent object with the event info
-          event = new calendarEvent(events.items[i].id, events.items[i].summary, events.items[i].location, events.items[i].start.dateTime);
+          // populate CalendarEvent object with the event info
+          event = new CalendarEvent(events.items[i].id, events.items[i].summary, events.items[i].location, events.items[i].start.dateTime);
 
           // Filter results by ones with telephone numbers in them
-          if (event._number.match(/\+[0-9 ]+/)) {
+          if (event.number.match(/\+[0-9 ]+/)) {
 
             // SMS Job
-            smsJob.send(jobSchedule.agenda, event, 'sms#1', event._number);
+            smsJob.send(jobSchedule.agenda, event, 'sms#1', event.number);
             smsJob.send(jobSchedule.agenda, event, 'sms#2', config.ownNumber);
 
             // Call Job
@@ -91,7 +91,7 @@ app.get('/', function(req, res) {
 
 
             // Start the tasks
-            jobSchedule.agenda.start();
+            //jobSchedule.agenda.start();
           }
         }
         res.send(events);
@@ -100,34 +100,103 @@ app.get('/', function(req, res) {
   }
 });
 
+function storeToken(token){
+  console.log(token)
+  // Store our credentials and redirect back to our main page
+  var collection = db.collection("tokens");
+  var settings = {};
+  settings._id = 'token';
+  settings.access_token = token.access_token;
+  settings.expires_at = new Date(token.expiry_date);
+  settings.refresh_token = token.refresh_token;  
+
+  collection.save(settings, { w: 0 });
+}
+
 // Return point for oAuth flow
 app.get('/auth', function(req, res) {
 
   var code = req.query.code;
 
   if (code) {
-    // Get an access token based on our OAuth code
-    oAuthClient.getToken(code, function(err, tokens) {
+    var collection = db.collection("tokens");
+    var today = Date.today().toString('yyyy-MM-dd');
+    collection.findOne({}, function(err, item){
+      
+      // Check for results
+      if(item){
+        console.log('found')
+        // if current time < what's saved
+        console.log(Date.today().setTimeToNow())
+        console.log(item.expires_at)
+        if(Date.compare(Date.today().setTimeToNow(), Date.parse(item.expires_at)) == -1){
+          console.log('using existing keys');
+          oAuthClient.setCredentials({
+            access_token: item.access_token,
+            refresh_token: item.refresh_token
+          });
+        }
+        else{
+          console.log('getting new keys');
+          // Get an access token based on our OAuth code
+          oAuthClient.getToken(code, function(err, tokens) {
+            if (err) {
+              console.log('Error authenticating');
+              console.log(err);
+            } else {
+              console.log('Successfully authenticated');
+              // if we already have a refresh token
+              if(tokens.refresh_token == undefined)
+                tokens.refresh_token = item.refresh_token;
 
-      if (err) {
-        console.log('Error authenticating')
-        console.log(err);
-      } else {
-        console.log('Successfully authenticated');
-        console.log(tokens);
+              // Save that new token
+              storeToken(tokens);
 
-        // Store our credentials and redirect back to our main page
-        oAuthClient.setCredentials(tokens);
-        authed = true;
-        res.redirect('/');
+              oAuthClient.setCredentials({
+                access_token: tokens.access_token,
+                refresh_token: item.refresh_token
+              });
+            }
+          });
+        }
       }
+
+      else{
+        console.log('not-found')
+        oAuthClient.getToken(code, function(err, tokens) {
+          if (err) {
+            console.log('Error authenticating');
+            console.log(err);
+          } else {
+            console.log('Successfully authenticated!');
+
+            // Save that token
+            storeToken(tokens);
+
+            oAuthClient.setCredentials({
+              access_token: tokens.access_token,
+              refresh_token: tokens.refresh_token
+            });
+          }
+        });
+      } 
     });
-  }
+
+      //oAuthClient.setCredentials(tokens);
+      authed = true;
+      res.redirect('/');
+    }
 });
 
 var server = app.listen(config.port, function() {
   var host = server.address().address;
   var port = server.address().port;
+
+  // initialize connection once
+  MongoClient.connect('mongodb://' + config.mongoConfig.ip + ':' + config.mongoConfig.port + '/' + config.mongoConfig.name, function(err, database){
+    if(err) throw err;
+    db = database;
+  });
 
   console.log('Listening at http://%s:%s', host, port);
 });

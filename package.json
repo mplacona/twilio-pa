@@ -8,6 +8,7 @@
     "googleapis": "~1.1.1",
     "agenda": "~0.6.26",
     "datejs": "~1.0.0-rc3",
-    "twilio": "~1.10.0"
+    "twilio": "~1.10.0",
+    "mongodb": "~1.4.30"
   }
 }
