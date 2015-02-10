@@ -45,6 +45,45 @@ app.post('/call', function(req, res) {
   res.end(resp.toString());
 });
 
+function fetchAndSchedule() {
+  // Set obj variables
+  var id, eventName, number, start;
+  // Format today's date
+  var today = Date.today().toString('yyyy-MM-dd') + 'T';
+
+  // Call google to fetch events for today on our calendar
+  calendar.events.list({
+    calendarId: config.googleConfig.calendarId,
+    maxResults: 20,
+    timeMax: Date.parse('tomorrow').addSeconds(-1).toISOString(), // any entries until the end of today
+    updatedMin: new Date().clearTime().toISOString(), // that have been created today
+    auth: oAuthClient
+  }, function(err, events) {
+    if (err) {
+      console.log('Error fetching events');
+      console.log(err);
+    } else {
+      // Send our JSON response back to the browser
+      console.log('Successfully fetched events');
+
+      for (var i = 0; i < events.items.length; i++) {
+        // populate CalendarEvent object with the event info
+        event = new CalendarEvent(events.items[i].id, events.items[i].summary, events.items[i].location, events.items[i].start.dateTime);
+
+        // Filter results by ones with telephone numbers in them
+        if (event.number.match(/\+[0-9 ]+/)) {
+
+          // SMS Job
+          smsJob.send(jobSchedule.agenda, event, 'sms#2', config.ownNumber);
+
+          // Call Job
+          callJob.call(jobSchedule.agenda, event, "call#1", config.ownNumber);
+        }
+      }
+
+    }
+  });
+}
 app.get('/', function(req, res) {
   var collection = db.collection("tokens");
   var today = Date.today().toString('yyyy-MM-dd');
@@ -56,43 +95,7 @@ app.get('/', function(req, res) {
         refresh_token: item.refresh_token
       });
 
-      // Set obj variables
-      var id, eventName, number, start;
-      // Format today's date
-      var today = Date.today().toString('yyyy-MM-dd') + 'T';
-
-      // Call google to fetch events for today on our calendar
-      calendar.events.list({
-        calendarId: config.googleConfig.calendarId,
-        maxResults: 20,
-        timeMax: Date.parse('tomorrow').addSeconds(-1).toISOString(), // any entries until the end of today
-        updatedMin: new Date().clearTime().toISOString(), // that have been created today
-        auth: oAuthClient
-      }, function(err, events) {
-        if (err) {
-          console.log('Error fetching events');
-          console.log(err);
-        } else {
-          // Send our JSON response back to the browser
-          console.log('Successfully fetched events');
-
-          for (var i = 0; i < events.items.length; i++) {
-            // populate CalendarEvent object with the event info
-            event = new CalendarEvent(events.items[i].id, events.items[i].summary, events.items[i].location, events.items[i].start.dateTime);
-
-            // Filter results by ones with telephone numbers in them
-            if (event.number.match(/\+[0-9 ]+/)) {
-
-              // SMS Job
-              smsJob.send(jobSchedule.agenda, event, 'sms#2', config.ownNumber);
-
-              // Call Job
-              callJob.call(jobSchedule.agenda, event, "call#1", config.ownNumber);
-            }
-          }
-          res.send(events);
-        }
-      });
+      res.send('authenticated');
 
     } else {
       token_utils._requestToken(res);
@@ -122,12 +125,12 @@ var server = app.listen(config.port, function() {
     db = database;
   });
 
-  jobSchedule.agenda.define('send reminder', function(job, done) {
-    console.log('Boom!');
+  jobSchedule.agenda.define('fetch events', function(job, done) {
+    fetchAndSchedule();
     done();
   });
 
-  jobSchedule.agenda.every('10 seconds', 'send reminder');
+  jobSchedule.agenda.every('10 seconds', 'fetch events');
 
   // Initialize the task scheduler
   jobSchedule.agenda.start()
