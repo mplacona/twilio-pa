@@ -38,39 +38,46 @@ authenticateWithCode = function(code) {
 			// Save that token
 			storeToken(tokens);
 
-			oAuthClient.setCredentials({
-				access_token: tokens.access_token,
-				refresh_token: tokens.refresh_token
-			});
+			setCredentials(tokens.access_token, tokens.refresh_token);
 		}
 	});
 }
 
+refreshToken = function(refresh_token) {
+	oAuthClient.refreshAccessToken(function(err, tokens) {
+		console.log(tokens)
+		updateToken(tokens);
+
+		setCredentials(tokens.access_token, refresh_token);
+	});
+	console.log('access token refreshed');
+}
+
 authenticateWithDB = function(tokens) {
 	// if current time < what's saved
-	if (Date.compare(Date.today().setTimeToNow(), Date.parse(item.expires_at)) == -1) {
+	if (Date.compare(Date.today().setTimeToNow(), Date.parse(tokens.expires_at)) == -1) {
 		console.log('using existing tokens');
-		oAuthClient.setCredentials({
-			access_token: item.access_token,
-			refresh_token: item.refresh_token
-		});
+		setCredentials(tokens.access_token, tokens.refresh_token);
 	} else {
 		// Token is expired, so needs a refresh
 		console.log('getting new tokens');
-		refreshToken(item.refresh_token);
+		setCredentials(tokens.access_token, tokens.refresh_token);
+		refreshToken(tokens.refresh_token);
 	}
 }
 
+setCredentials = function(access_token, refresh_token) {
+	oAuthClient.setCredentials({
+		access_token: access_token,
+		refresh_token: refresh_token
+	});
+}
+
 module.exports = {
-	refreshToken: function(refresh_token) {
-		oAuthClient.refreshAccessToken(function(err, tokens) {
-			updateToken(tokens);
-			oAuthClient.setCredentials({
-				access_token: tokens.access_token,
-				refresh_token: refresh_token
-			});
-		});
-		console.log('access token refreshed');
+	refreshToken: refreshToken,
+	
+	setCredentials: function(access_token, refresh_token){
+		setCredentials(access_token, refresh_token);
 	},
 
 	requestToken: function(res) {

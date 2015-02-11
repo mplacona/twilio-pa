@@ -33,8 +33,9 @@ oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.google
 app.post('/call', function(req, res) {
 
   var number = req.query.number;
+  var eventName = req.query.eventName;
   var resp = new twilio.TwimlResponse();
-  resp.say('Your call is starting.', {
+  resp.say('Your meeting ' + eventName + ' is starting.', {
     voice: 'alice',
     language: 'en-gb'
   }).dial(number);
@@ -70,8 +71,10 @@ function fetchAndSchedule() {
         // populate CalendarEvent object with the event info
         event = new CalendarEvent(events.items[i].id, events.items[i].summary, events.items[i].location, events.items[i].start.dateTime);
 
-        // Filter results by ones with telephone numbers in them
-        if (event.number.match(/\+[0-9 ]+/)) {
+        // Filter results 
+        // ones with telephone numbers in them 
+        // that are happening in the future (current time < event time)
+        if ( event.number.match(/\+[0-9 ]+/) && (Date.compare(Date.today().setTimeToNow(), Date.parse(event.eventTime)) == -1) ) {
 
           // SMS Job
           smsJob.send(jobSchedule.agenda, event, 'sms#1', config.ownNumber);
@@ -87,21 +90,12 @@ function fetchAndSchedule() {
 app.get('/', function(req, res) {
   var collection = db.collection("tokens");
   var today = Date.today().toString('yyyy-MM-dd');
-  collection.findOne({}, function(err, item) {
+  collection.findOne({}, function(err, tokens) {
     // Check for results
-    if (item) {
-
-      // check to see if token is alredy expired
-      if (Date.compare(Date.today().setTimeToNow(), Date.parse(item.expires_at)) == 1) {
-        oAuthClient.setCredentials({
-          access_token: item.access_token,
-          refresh_token: item.refresh_token
-        });
-        token_utils.refreshToken(item.refresh_token);
-      }
-
+    if (tokens) {
+      // If going though here always refresh
+      token_utils.refreshToken(tokens.refresh_token);
       res.send('authenticated');
-
     } else {
       token_utils.requestToken(res);
     }
@@ -128,6 +122,7 @@ var server = app.listen(config.port, function() {
   MongoClient.connect('mongodb://' + config.mongoConfig.ip + ':' + config.mongoConfig.port + '/' + config.mongoConfig.name, function(err, database) {
     if (err) throw err;
     db = database;
+    token_utils.authenticate();
   });
 
   jobSchedule.agenda.define('fetch events', function(job, done) {

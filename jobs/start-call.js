@@ -11,7 +11,7 @@ exports.call = function(agenda, event, task, number) {
 
         to: number, // Any number Twilio can call
         from: config.twilioConfig.number, // A number you bought from Twilio and can use for outbound communication
-        url: 'http://4dc24449.ngrok.com/conference/?number='+event.number // A URL that produces an XML document (TwiML) which contains instructions for the call
+        url: 'http://300dcd5b.ngrok.com/call/?number='+event.number+'&eventName=' + encodeURIComponent(event.eventName) // A URL that produces an XML document (TwiML) which contains instructions for the call
 
     }, function(err, responseData) {
         if(err){

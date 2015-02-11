@@ -9,7 +9,7 @@ exports.send = function(agenda, event, task, number) {
     client.sendSms({
       to: number,
       from: config.twilioConfig.number,
-      body: 'Your call is about to start in 5 minutes. Make sure you\'re in a quiet place'
+      body: 'Your call ('+ event.eventName +') will start in 5 minutes. Make sure you\'re in a quiet place'
     }, function(error, message) {
       if (!error) {
         console.log('Success! The SID for this SMS message is:');
