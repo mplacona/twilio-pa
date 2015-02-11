@@ -97,13 +97,13 @@ app.get('/', function(req, res) {
           access_token: item.access_token,
           refresh_token: item.refresh_token
         });
-        token_utils._refreshToken(item.refresh_token);
+        token_utils.refreshToken(item.refresh_token);
       }
 
       res.send('authenticated');
 
     } else {
-      token_utils._requestToken(res);
+      token_utils.requestToken(res);
     }
   });
 });
@@ -114,7 +114,7 @@ app.get('/auth', function(req, res) {
   var code = req.query.code;
 
   if (code) {
-    token_utils._authenticate(code)
+    token_utils.authenticate(code)
 
     res.redirect('/');
   }

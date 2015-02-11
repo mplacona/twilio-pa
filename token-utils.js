@@ -1,6 +1,5 @@
-_storeToken = function(token) {
-	console.log(token)
-		// Store our credentials and redirect back to our main page
+storeToken = function(token) {
+	// Store our credentials and redirect back to our main page
 	var collection = db.collection("tokens");
 	var settings = {};
 	settings._id = 'token';
@@ -13,7 +12,7 @@ _storeToken = function(token) {
 	});
 }
 
-_updateToken = function(token) {
+updateToken = function(token) {
 	var collection = db.collection("tokens");
 	// attention to $set here
 	collection.update({
@@ -28,11 +27,44 @@ _updateToken = function(token) {
 	});
 }
 
+authenticateWithCode = function(code) {
+	oAuthClient.getToken(code, function(err, tokens) {
+		if (err) {
+			console.log('Error authenticating');
+			console.log(err);
+		} else {
+			console.log('Successfully authenticated!');
+
+			// Save that token
+			storeToken(tokens);
+
+			oAuthClient.setCredentials({
+				access_token: tokens.access_token,
+				refresh_token: tokens.refresh_token
+			});
+		}
+	});
+}
+
+authenticateWithDB = function(tokens) {
+	// if current time < what's saved
+	if (Date.compare(Date.today().setTimeToNow(), Date.parse(item.expires_at)) == -1) {
+		console.log('using existing tokens');
+		oAuthClient.setCredentials({
+			access_token: item.access_token,
+			refresh_token: item.refresh_token
+		});
+	} else {
+		// Token is expired, so needs a refresh
+		console.log('getting new tokens');
+		refreshToken(item.refresh_token);
+	}
+}
+
 module.exports = {
-	_refreshToken: function(refresh_token) {
+	refreshToken: function(refresh_token) {
 		oAuthClient.refreshAccessToken(function(err, tokens) {
-			console.log(tokens);
-			_updateToken(tokens);
+			updateToken(tokens);
 			oAuthClient.setCredentials({
 				access_token: tokens.access_token,
 				refresh_token: refresh_token
@@ -41,7 +73,7 @@ module.exports = {
 		console.log('access token refreshed');
 	},
 
-	_requestToken: function(res) {
+	requestToken: function(res) {
 		// Generate an OAuth URL and redirect there
 		var url = oAuthClient.generateAuthUrl({
 			access_type: 'offline',
@@ -50,46 +82,18 @@ module.exports = {
 		res.redirect(url);
 	},
 
-	_authenticate: function(code) {
+	authenticate: function(code) {
 		var collection = db.collection("tokens");
 		var today = Date.today().toString('yyyy-MM-dd');
-		collection.findOne({}, function(err, item) {
+		collection.findOne({}, function(err, tokens) {
 
 			// Check for results
-			if (item) {
+			if (tokens) {
 				console.log('found')
-					// if current time < what's saved
-				console.log(Date.today().setTimeToNow())
-				console.log(item.expires_at)
-				if (Date.compare(Date.today().setTimeToNow(), Date.parse(item.expires_at)) == -1) {
-					console.log('using existing tokens');
-					oAuthClient.setCredentials({
-						access_token: item.access_token,
-						refresh_token: item.refresh_token
-					});
-				} else {
-					console.log('getting new tokens');
-					// Get an access token based on our OAuth code
-					_refreshToken(item.refresh_token);
-				}
+				authenticateWithDB(tokens);
 			} else {
 				console.log('not-found')
-				oAuthClient.getToken(code, function(err, tokens) {
-					if (err) {
-						console.log('Error authenticating');
-						console.log(err);
-					} else {
-						console.log('Successfully authenticated!');
-
-						// Save that token
-						_storeToken(tokens);
-
-						oAuthClient.setCredentials({
-							access_token: tokens.access_token,
-							refresh_token: tokens.refresh_token
-						});
-					}
-				});
+				authenticateWithCode(code);
 			}
 		});
 	}
