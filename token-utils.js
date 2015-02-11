@@ -1,4 +1,4 @@
-function _storeToken(token) {
+_storeToken = function(token) {
 	console.log(token)
 		// Store our credentials and redirect back to our main page
 	var collection = db.collection("tokens");
@@ -13,40 +13,32 @@ function _storeToken(token) {
 	});
 }
 
+_updateToken = function(token) {
+	var collection = db.collection("tokens");
+	// attention to $set here
+	collection.update({
+		_id: 'token'
+	}, {
+		$set: {
+			access_token: token.access_token,
+			expires_at: new Date(token.expiry_date)
+		}
+	}, {
+		w: 0
+	});
+}
+
 module.exports = {
-
-	_updateToken: function(token) {
-		var collection = db.collection("tokens");
-		// attention to $set here
-		collection.update({
-			_id: 'token'
-		}, {
-			$set: {
-				access_token: token.access_token,
-				expires_at: new Date(token.expiry_date)
-			}
-		}, {
-			w: 0
+	_refreshToken: function(refresh_token) {
+		oAuthClient.refreshAccessToken(function(err, tokens) {
+			console.log(tokens);
+			_updateToken(tokens);
+			oAuthClient.setCredentials({
+				access_token: tokens.access_token,
+				refresh_token: refresh_token
+			});
 		});
-	},
-
-	_refreshToken: function(code, refresh_token) {
-		oAuthClient.getToken(code, function(err, tokens) {
-			if (err) {
-				console.log('Error authenticating');
-				console.log(err);
-			} else {
-				console.log('Successfully authenticated');
-
-				// Save that new token but keep refresh_token
-				_updateToken(tokens);
-
-				oAuthClient.setCredentials({
-					access_token: tokens.access_token,
-					refresh_token: refresh_token
-				});
-			}
-		});
+		console.log('access token refreshed');
 	},
 
 	_requestToken: function(res) {
@@ -78,7 +70,7 @@ module.exports = {
 				} else {
 					console.log('getting new tokens');
 					// Get an access token based on our OAuth code
-					_refreshToken(code, item.refresh_token);
+					_refreshToken(item.refresh_token);
 				}
 			} else {
 				console.log('not-found')

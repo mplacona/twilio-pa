@@ -74,7 +74,7 @@ function fetchAndSchedule() {
         if (event.number.match(/\+[0-9 ]+/)) {
 
           // SMS Job
-          smsJob.send(jobSchedule.agenda, event, 'sms#2', config.ownNumber);
+          smsJob.send(jobSchedule.agenda, event, 'sms#1', config.ownNumber);
 
           // Call Job
           callJob.call(jobSchedule.agenda, event, "call#1", config.ownNumber);
@@ -90,10 +90,15 @@ app.get('/', function(req, res) {
   collection.findOne({}, function(err, item) {
     // Check for results
     if (item) {
-      oAuthClient.setCredentials({
-        access_token: item.access_token,
-        refresh_token: item.refresh_token
-      });
+
+      // check to see if token is alredy expired
+      if (Date.compare(Date.today().setTimeToNow(), Date.parse(item.expires_at)) == 1) {
+        oAuthClient.setCredentials({
+          access_token: item.access_token,
+          refresh_token: item.refresh_token
+        });
+        token_utils._refreshToken(item.refresh_token);
+      }
 
       res.send('authenticated');
 
@@ -130,7 +135,7 @@ var server = app.listen(config.port, function() {
     done();
   });
 
-  jobSchedule.agenda.every('30 minutes', 'fetch events');
+  jobSchedule.agenda.every('10 minutes', 'fetch events');
 
   // Initialize the task scheduler
   jobSchedule.agenda.start()
