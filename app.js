@@ -118,7 +118,12 @@ var server = app.listen(config.port, function() {
 
   // make sure user is authenticated
   getConnection(function(err, db) {
-    tokenUtils.authenticateWithDB(db);
+    var collection = db.collection("tokens");
+    collection.findOne({}, function(err, tokens) {
+      if (tokens) {
+        tokenUtils.authenticateWithDB(db);
+      }
+    });
   });
 
   jobSchedule.agenda.define('fetch events', function(job, done) {
