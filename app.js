@@ -1,20 +1,20 @@
 var config = require('./config');
-var token_utils = require('./token-utils');
+var tokenUtils = require('./token-utils');
 
 // Dependency setup
 var express = require('express'),
   google = require('googleapis'),
   date = require('datejs'),
-  twilio = require('twilio'),
-  MongoClient = require('mongodb').MongoClient.connect('mongodb://' + config.mongoConfig.ip + ':' + config.mongoConfig.port + '/' + config.mongoConfig.name, function(err, database) {
-    if (err) throw err;
-    db = database;
-    token_utils.authenticate(db);
-  });;
+  twilio = require('twilio');
 
 // Initialization
 var app = express(),
-  calendar = google.calendar('v3');
+  calendar = google.calendar('v3'),
+  MongoClient = require('mongodb').MongoClient.connect('mongodb://' + config.mongoConfig.ip + ':' + config.mongoConfig.port + '/' + config.mongoConfig.name, function(err, database) {
+    if (err) throw err;
+    db = database;
+    tokenUtils.authenticate(db);
+  });
 
 oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.googleConfig.clientSecret, config.googleConfig.redirectURL);
 
@@ -94,10 +94,10 @@ app.get('/', function(req, res) {
     // Check for results
     if (tokens) {
       // If going through here always refresh
-      token_utils.refreshToken(tokens.refresh_token);
+      tokenUtils.refreshToken(tokens.refresh_token);
       res.send('authenticated');
     } else {
-      token_utils.requestToken(res);
+      tokenUtils.requestToken(res);
     }
   });
 });
@@ -108,7 +108,7 @@ app.get('/auth', function(req, res) {
   var code = req.query.code;
 
   if (code) {
-    token_utils.authenticate(code)
+    tokenUtils.authenticate(code)
 
     res.redirect('/');
   }
