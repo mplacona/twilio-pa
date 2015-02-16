@@ -1,5 +1,6 @@
 var config = require('./config');
 var tokenUtils = require('./token-utils');
+var getConnection = require('./connection');
 
 // Dependency setup
 var express = require('express'),
@@ -9,14 +10,9 @@ var express = require('express'),
 
 // Initialization
 var app = express(),
-  calendar = google.calendar('v3'),
-  MongoClient = require('mongodb').MongoClient.connect('mongodb://' + config.mongoConfig.ip + ':' + config.mongoConfig.port + '/' + config.mongoConfig.name, function(err, database) {
-    if (err) throw err;
-    db = database;
-    tokenUtils.authenticate(db);
-  });
+  calendar = google.calendar('v3');
 
-oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.googleConfig.clientSecret, config.googleConfig.redirectURL);
+  oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.googleConfig.clientSecret, config.googleConfig.redirectURL);
 
 // Schedule setup
 var jobSchedule = require('./job-schedule.js'),
@@ -89,16 +85,18 @@ app.post('/call', function(req, res) {
 });
 
 app.get('/', function(req, res) {
-  var collection = db.collection("tokens");
-  collection.findOne({}, function(err, tokens) {
-    // Check for results
-    if (tokens) {
-      // If going through here always refresh
-      tokenUtils.refreshToken(tokens.refresh_token);
-      res.send('authenticated');
-    } else {
-      tokenUtils.requestToken(res);
-    }
+  getConnection(function(err, db) {
+    var collection = db.collection("tokens");
+    collection.findOne({}, function(err, tokens) {
+      // Check for results
+      if (tokens) {
+        // If going through here always refresh
+        tokenUtils.refreshToken(tokens.refresh_token);
+        res.send('authenticated');
+      } else {
+        tokenUtils.requestToken(res);
+      }
+    });
   });
 });
 
@@ -108,7 +106,7 @@ app.get('/auth', function(req, res) {
   var code = req.query.code;
 
   if (code) {
-    tokenUtils.authenticate(code)
+    tokenUtils.authenticateWithCode(code)
 
     res.redirect('/');
   }
@@ -117,6 +115,11 @@ app.get('/auth', function(req, res) {
 var server = app.listen(config.port, function() {
   var host = server.address().address;
   var port = server.address().port;
+
+  // make sure user is authenticated
+  getConnection(function(err, db) {
+    tokenUtils.authenticateWithDB(db);
+  });
 
   jobSchedule.agenda.define('fetch events', function(job, done) {
     fetchAndSchedule();
