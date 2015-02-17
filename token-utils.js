@@ -44,18 +44,19 @@ updateToken = function(token, db) {
   a token including the refresh token using the code returned by
   Google's authentication page
 */
-authenticateWithCode = function(code) {
+authenticateWithCode = function(code, callback) {
   oAuthClient.getToken(code, function(err, tokens) {
     if (err) {
       console.log('Error authenticating');
       console.log(err);
+      return callback(err);
     } else {
       console.log('Successfully authenticated!');
-
       // Save that token
       storeToken(tokens);
 
       setCredentials(tokens.access_token, tokens.refresh_token);
+      return callback(null, tokens);
     }
   });
 }
@@ -87,7 +88,6 @@ authenticateWithDB = function(tokens) {
 // Refreshes the tokens and gives a new access token
 refreshToken = function(refresh_token) {
   oAuthClient.refreshAccessToken(function(err, tokens) {
-    console.log(tokens)
     updateToken(tokens);
 
     setCredentials(tokens.access_token, refresh_token);
@@ -116,11 +116,16 @@ requestToken = function(res) {
 module.exports = {
   refreshToken: refreshToken,
 
-  setCredentials: setCredentials,
-
   requestToken: requestToken,
 
-  authenticateWithCode: authenticateWithCode,
+  authenticateWithCode : function(code, callback){
+    authenticateWithCode(code, function(err, data){
+      if(err){
+        return callback(err)
+      }
+      callback(null, data);
+    });
+  },
 
   authenticateWithDB: authenticateWithDB
 }

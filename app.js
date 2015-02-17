@@ -106,9 +106,13 @@ app.get('/auth', function(req, res) {
   var code = req.query.code;
 
   if (code) {
-    tokenUtils.authenticateWithCode(code);
-
-    res.redirect('/');
+    tokenUtils.authenticateWithCode(code, function(err, data) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.redirect('/');
+      }
+    });
   }
 });
 
