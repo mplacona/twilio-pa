@@ -6,7 +6,7 @@ var getConnection = require('./connection');
 */
 storeToken = function(token) {
     getConnection(function(err, db) {
-      // Store our credentials and redirect back to our main page
+      // Store our credentials in the database
       var collection = db.collection("tokens");
       var settings = {};
       settings._id = 'token';
@@ -19,14 +19,13 @@ storeToken = function(token) {
       });
     });
   }
-  /* 
-    Updates an existing token taking care of only updating necessary 
-    information. We want to preserve our refresh_token
-   */
+/* 
+  Updates an existing token taking care of only updating necessary 
+  information. We want to preserve our refresh_token
+ */
 updateToken = function(token, db) {
   getConnection(function(err, db) {
     var collection = db.collection("tokens");
-    // attention to $set here
     collection.update({
       _id: 'token'
     }, {

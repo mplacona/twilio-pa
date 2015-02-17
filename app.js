@@ -106,7 +106,7 @@ app.get('/auth', function(req, res) {
   var code = req.query.code;
 
   if (code) {
-    tokenUtils.authenticateWithCode(code)
+    tokenUtils.authenticateWithCode(code);
 
     res.redirect('/');
   }
@@ -116,7 +116,7 @@ var server = app.listen(config.port, function() {
   var host = server.address().address;
   var port = server.address().port;
 
-  // make sure user is authenticated
+  // make sure user is authenticated but check for existing tokens first
   getConnection(function(err, db) {
     var collection = db.collection("tokens");
     collection.findOne({}, function(err, tokens) {
