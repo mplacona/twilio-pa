@@ -1,5 +1,4 @@
 var config = require('./config');
-var tokenUtils = require('./token-utils');
 var getConnection = require('./connection');
 
 // Dependency setup
@@ -10,9 +9,9 @@ var express = require('express'),
 
 // Initialization
 var app = express(),
-  calendar = google.calendar('v3');
-
-  oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.googleConfig.clientSecret, config.googleConfig.redirectURL);
+  calendar = google.calendar('v3'),
+  oAuthClient = new google.auth.OAuth2(config.googleConfig.clientID, config.googleConfig.clientSecret, config.googleConfig.redirectURL),
+  tokenUtils = require('./token-utils')(oAuthClient);
 
 // Schedule setup
 var jobSchedule = require('./job-schedule.js'),
@@ -125,7 +124,7 @@ var server = app.listen(config.port, function() {
     var collection = db.collection("tokens");
     collection.findOne({}, function(err, tokens) {
       if (tokens) {
-        tokenUtils.authenticateWithDB(db);
+        tokenUtils.authenticateWithDB();
       }
     });
   });
