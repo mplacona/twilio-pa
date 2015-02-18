@@ -131,13 +131,8 @@ module.exports = function(oAuthClient) {
     }, oAuthClient);
   };
 
-  module.authenticateWithDB = function(callback) {
-    authenticateWithDB(oAuthClient, function(err, data) {
-      if (err) {
-        return callback(err)
-      }
-      callback(null, data);
-    });
+  module.authenticateWithDB = function(){
+    authenticateWithDB(oAuthClient);
   };
 
   return module;

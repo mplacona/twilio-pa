@@ -129,13 +129,7 @@ var server = app.listen(config.port, function() {
   });
 
   jobSchedule.agenda.define('fetch events', function(job, done) {
-    tokenUtils.authenticateWithDB(function(err, data) {
-      if (err) {
-        console.log(err);
-      } else {
-        res.redirect('/');
-      }
-    });
+    fetchAndSchedule();
     done();
   });
 
