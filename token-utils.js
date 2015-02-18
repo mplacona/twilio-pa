@@ -111,30 +111,33 @@ requestToken = function(res, oAuthClient) {
   res.redirect(url);
 }
 
-
-
-module.exports = function(oAuthClient){
+module.exports = function(oAuthClient) {
   var module = {};
 
-  module.refreshToken = function(refresh_token){
+  module.refreshToken = function(refresh_token) {
     refreshToken(refresh_token, oAuthClient);
   };
 
-  module.requestToken = function(res){
+  module.requestToken = function(res) {
     requestToken(res, oAuthClient);
   };
 
-  module.authenticateWithCode = function(code, callback){
-    authenticateWithCode(code, function(err, data){
-      if(err){
+  module.authenticateWithCode = function(code, callback) {
+    authenticateWithCode(code, function(err, data) {
+      if (err) {
         return callback(err)
       }
       callback(null, data);
     }, oAuthClient);
   };
 
-  module.authenticateWithDB = function(){
-    authenticateWithDB(oAuthClient);
+  module.authenticateWithDB = function(callback) {
+    authenticateWithDB(oAuthClient, function(err, data) {
+      if (err) {
+        return callback(err)
+      }
+      callback(null, data);
+    });
   };
 
   return module;

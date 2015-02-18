@@ -5,7 +5,4 @@ agenda = new Agenda({
     address: config.mongoConfig.ip + ':' + config.mongoConfig.port + '/' + config.mongoConfig.name
   }
 });
-
-agenda.start();
-
 exports.agenda = agenda;

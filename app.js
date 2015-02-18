@@ -68,7 +68,6 @@ function fetchAndSchedule() {
 }
 
 app.post('/call', function(req, res) {
-
   var number = req.query.number;
   var eventName = req.query.eventName;
   var resp = new twilio.TwimlResponse();
@@ -130,14 +129,20 @@ var server = app.listen(config.port, function() {
   });
 
   jobSchedule.agenda.define('fetch events', function(job, done) {
-    fetchAndSchedule();
+    tokenUtils.authenticateWithDB(function(err, data) {
+      if (err) {
+        console.log(err);
+      } else {
+        res.redirect('/');
+      }
+    });
     done();
   });
 
   jobSchedule.agenda.every('10 minutes', 'fetch events');
 
   // Initialize the task scheduler
-  jobSchedule.agenda.start()
+  jobSchedule.agenda.start();
 
   console.log('Listening at http://%s:%s', host, port);
 });
