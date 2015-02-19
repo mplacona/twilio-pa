@@ -4,7 +4,7 @@ var getConnection = require('./connection');
   Receives a token object and stores it for the first time. 
   This includes the refresh token
 */
-storeToken = function(token) {
+var storeToken = function(token) {
     getConnection(function(err, db) {
       // Store our credentials in the database
       var collection = db.collection("tokens");
@@ -23,7 +23,7 @@ storeToken = function(token) {
   Updates an existing token taking care of only updating necessary 
   information. We want to preserve our refresh_token
  */
-updateToken = function(token, db) {
+var updateToken = function(token, db) {
   getConnection(function(err, db) {
     var collection = db.collection("tokens");
     collection.update({
@@ -44,7 +44,7 @@ updateToken = function(token, db) {
   a token including the refresh token using the code returned by
   Google's authentication page
 */
-authenticateWithCode = function(code, callback, oAuthClient) {
+var authenticateWithCode = function(code, callback, oAuthClient) {
   oAuthClient.getToken(code, function(err, tokens) {
     if (err) {
       console.log('Error authenticating');
@@ -67,7 +67,7 @@ authenticateWithCode = function(code, callback, oAuthClient) {
   Failing that (i.e. the token has expired), it will
   refresh that token and store a new one.
 */
-authenticateWithDB = function(oAuthClient) {
+var authenticateWithDB = function(oAuthClient) {
   getConnection(function(err, db) {
     var collection = db.collection("tokens");
     collection.findOne({}, function(err, tokens) {
@@ -86,7 +86,7 @@ authenticateWithDB = function(oAuthClient) {
 }
 
 // Refreshes the tokens and gives a new access token
-refreshToken = function(refresh_token, oAuthClient) {
+var refreshToken = function(refresh_token, oAuthClient) {
   oAuthClient.refreshAccessToken(function(err, tokens) {
     updateToken(tokens);
 
@@ -95,14 +95,14 @@ refreshToken = function(refresh_token, oAuthClient) {
   console.log('access token refreshed');
 }
 
-setCredentials = function(access_token, refresh_token, oAuthClient) {
+var setCredentials = function(access_token, refresh_token, oAuthClient) {
   oAuthClient.setCredentials({
     access_token: access_token,
     refresh_token: refresh_token
   });
 }
 
-requestToken = function(res, oAuthClient) {
+var requestToken = function(res, oAuthClient) {
   // Generate an OAuth URL and redirect there
   var url = oAuthClient.generateAuthUrl({
     access_type: 'offline',
